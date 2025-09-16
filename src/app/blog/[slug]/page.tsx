@@ -1,12 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa } from "@/lib/utils";
-import Image from "next/image";
+import TableOfContents from "@/components/blog/TableOfContents";
 
-export const revalidate = 3600; // SSG + ISR
+export const revalidate = 3600;
 
-// 事前に静的生成するパス
 export async function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
 }
@@ -19,16 +19,16 @@ export default async function PostPage({ params }: { params: { slug: string } })
     <article className="max-w-3xl mx-auto p-4">
       {post.coverImage && (
         <Image
-        src={post.coverImage}
-        alt={post.title}
-        width={1600}
-        height={480}
-        className="w-full h-60 md:h-80 object-cover rounded mb-6"
-      />      
+          src={post.coverImage}
+          alt={post.title}
+          width={1600}
+          height={480}
+          className="w-full h-60 md:h-80 object-cover rounded mb-6"
+        />
       )}
 
-      <h1 className="text-4xl font-extrabold mb-2">{post.title}</h1>
-      <p className="text-gray-300 mb-4">{formatJa(post.date)} ・ {post.author}</p>
+      <h1 className="text-4xl font-extrabold mb-2 text-white">{post.title}</h1>
+      <p className="text-white/90 mb-4">{formatJa(post.date)} ・ {post.author}</p>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {post.tags.map((t) => (
@@ -42,8 +42,12 @@ export default async function PostPage({ params }: { params: { slug: string } })
         ))}
       </div>
 
-      {/* ダーク背景でも読みやすくするため prose を反転 */}
+      {/* ここで目次を表示（本文中の h2/h3 を自動で拾う） */}
+      <TableOfContents target="#post-article" />
+
+      {/* 本文：見出しには rehype-slug で id が付与済み */}
       <div
+        id="post-article"
         className="prose prose-zinc prose-invert max-w-none"
         dangerouslySetInnerHTML={{ __html: post.contentHtml }}
       />
