@@ -1,12 +1,15 @@
+// src/lib/markdown.ts
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
 import remarkRehype from "remark-rehype";
-import rehypeHighlight from "rehype-highlight";
 import rehypeStringify from "rehype-stringify";
+import rehypeHighlight from "rehype-highlight";
+import rehypeSlug from "rehype-slug";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
-export type PostMeta = {
+export type Post = {
   slug: string;
   title: string;
   date: string;
@@ -15,13 +18,29 @@ export type PostMeta = {
   excerpt: string;
   coverImage?: string;
   published: boolean;
+  contentHtml: string;
+  readingMinutes: number; // ★ 追加
 };
-
-export type Post = PostMeta & { contentHtml: string };
 
 const POSTS_DIR = path.join(process.cwd(), "src/content/blog");
 
+// 生文字列から読了時間をざっくり計算（日本語は文字数で推定）
+function estimateReadingMinutes(raw: string): number {
+  // コードブロックや記号を除いて、純粋な本文に近づける
+  const withoutCode = raw.replace(/```[\s\S]*?```/g, ""); // ``` ～ ``` を除去
+  const plain = withoutCode
+    .replace(/\[(.*?)\]\(.*?\)/g, "$1")   // Markdownリンク → テキスト
+    .replace(/[#>*_`~\-]+/g, " ")         // 見出し/箇条書き記号など
+    .replace(/\s+/g, " ");                 // 連続空白整理
+  const charCount = plain.replace(/\s/g, "").length;
+
+  // ざっくり：日本語 500 文字 / 分 を基準にする（最低1分）
+  const minutes = Math.max(1, Math.round(charCount / 500));
+  return minutes;
+}
+
 export function getAllSlugs(): string[] {
+  if (!fs.existsSync(POSTS_DIR)) return [];
   return fs
     .readdirSync(POSTS_DIR)
     .filter((f) => f.endsWith(".md"))
@@ -30,41 +49,43 @@ export function getAllSlugs(): string[] {
 
 export async function getPostBySlug(slug: string): Promise<Post> {
   const fullPath = path.join(POSTS_DIR, `${slug}.md`);
-  const raw = fs.readFileSync(fullPath, "utf8");
-  const { data, content } = matter(raw);
+  const file = fs.readFileSync(fullPath, "utf8");
+  const { data, content } = matter(file);
 
-  // Markdown -> HTML（rehype-highlightでコードに色を付ける）
   const processed = await remark()
     .use(remarkRehype)
+    .use(rehypeSlug)
+    .use(rehypeAutolinkHeadings, { behavior: "wrap" })
     .use(rehypeHighlight)
     .use(rehypeStringify)
     .process(content);
 
-  const contentHtml = processed.toString();
+  const html = processed.toString();
+  const readingMinutes = estimateReadingMinutes(content); // ★ 追加
 
-  const meta: PostMeta = {
+  return {
     slug,
-    title: data.title ?? slug,
-    date: data.date ?? new Date().toISOString(),
-    author: data.author ?? "unknown",
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    excerpt: data.excerpt ?? "",
-    coverImage: data.coverImage,
+    title: data.title as string,
+    date: data.date as string,
+    author: (data.author as string) ?? "",
+    tags: (data.tags as string[]) ?? [],
+    excerpt: (data.excerpt as string) ?? "",
+    coverImage: data.coverImage as string | undefined,
     published: data.published ?? true,
+    contentHtml: html,
+    readingMinutes, // ★ 追加
   };
-
-  return { ...meta, contentHtml };
 }
 
 export async function getAllPosts(): Promise<Post[]> {
   const slugs = getAllSlugs();
-  const posts = await Promise.all(slugs.map(getPostBySlug));
+  const posts = await Promise.all(slugs.map((s) => getPostBySlug(s)));
   return posts
     .filter((p) => p.published)
-    .sort((a, b) => (a.date > b.date ? -1 : 1));
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
-export async function getPostsByTag(tag: string): Promise<Post[]> {
+export async function getPostsByTag(tag: string) {
   const posts = await getAllPosts();
   return posts.filter((p) => p.tags.includes(tag));
 }

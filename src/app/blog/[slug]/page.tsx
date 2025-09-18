@@ -28,7 +28,11 @@ export default async function PostPage({ params }: { params: { slug: string } })
       )}
 
       <h1 className="text-4xl font-extrabold mb-2 text-white">{post.title}</h1>
-      <p className="text-white/90 mb-4">{formatJa(post.date)} ・ {post.author}</p>
+
+      {/* 日付・著者・読了時間 */}
+      <p className="text-white/90 mb-4">
+        {formatJa(post.date)} ・ {post.author} ・ 約{post.readingMinutes}分で読めます
+      </p>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {post.tags.map((t) => (
@@ -42,10 +46,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
         ))}
       </div>
 
-      {/* ここで目次を表示（本文中の h2/h3 を自動で拾う） */}
+      {/* 目次 */}
       <TableOfContents target="#post-article" />
 
-      {/* 本文：見出しには rehype-slug で id が付与済み */}
+      {/* 本文 */}
       <div
         id="post-article"
         className="prose prose-zinc prose-invert max-w-none"
