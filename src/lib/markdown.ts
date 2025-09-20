@@ -8,37 +8,22 @@ import rehypeStringify from "rehype-stringify";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
-
-export type Post = {
-  slug: string;
-  title: string;
-  date: string;
-  author: string;
-  tags: string[];
-  excerpt: string;
-  coverImage?: string;
-  published: boolean;
-  contentHtml: string;
-  readingMinutes: number; // ★ 追加
-};
+import type { Post } from "@/types";
 
 const POSTS_DIR = path.join(process.cwd(), "src/content/blog");
 
 // 生文字列から読了時間をざっくり計算（日本語は文字数で推定）
 function estimateReadingMinutes(raw: string): number {
-  // コードブロックや記号を除いて、純粋な本文に近づける
   const withoutCode = raw.replace(/```[\s\S]*?```/g, ""); // ``` ～ ``` を除去
   const plain = withoutCode
-    .replace(/\[(.*?)\]\(.*?\)/g, "$1")   // Markdownリンク → テキスト
-    .replace(/[#>*_`~\-]+/g, " ")         // 見出し/箇条書き記号など
-    .replace(/\s+/g, " ");                 // 連続空白整理
+    .replace(/\[(.*?)\]\(.*?\)/g, "$1") // [text](url) → text
+    .replace(/[#>*_`~\-]+/g, " ")       // 記号類
+    .replace(/\s+/g, " ");              // 連続空白
   const charCount = plain.replace(/\s/g, "").length;
-
-  // ざっくり：日本語 500 文字 / 分 を基準にする（最低1分）
-  const minutes = Math.max(1, Math.round(charCount / 500));
-  return minutes;
+  return Math.max(1, Math.round(charCount / 500)); // 500字/分
 }
 
+// すべてのスラッグ
 export function getAllSlugs(): string[] {
   if (!fs.existsSync(POSTS_DIR)) return [];
   return fs
@@ -47,6 +32,7 @@ export function getAllSlugs(): string[] {
     .map((f) => f.replace(/\.md$/, ""));
 }
 
+// スラッグから記事データ取得（見出しにID/リンク付与＋ハイライト）
 export async function getPostBySlug(slug: string): Promise<Post> {
   const fullPath = path.join(POSTS_DIR, `${slug}.md`);
   const file = fs.readFileSync(fullPath, "utf8");
@@ -61,7 +47,6 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     .process(content);
 
   const html = processed.toString();
-  const readingMinutes = estimateReadingMinutes(content); // ★ 追加
 
   return {
     slug,
@@ -73,10 +58,11 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     coverImage: data.coverImage as string | undefined,
     published: data.published ?? true,
     contentHtml: html,
-    readingMinutes, // ★ 追加
+    readingMinutes: estimateReadingMinutes(content),
   };
 }
 
+// 公開記事を新しい順で
 export async function getAllPosts(): Promise<Post[]> {
   const slugs = getAllSlugs();
   const posts = await Promise.all(slugs.map((s) => getPostBySlug(s)));
@@ -85,11 +71,13 @@ export async function getAllPosts(): Promise<Post[]> {
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
+// タグ絞り込み
 export async function getPostsByTag(tag: string) {
   const posts = await getAllPosts();
   return posts.filter((p) => p.tags.includes(tag));
 }
 
+// すべてのタグ（重複なし）
 export async function getAllTags(): Promise<string[]> {
   const posts = await getAllPosts();
   return Array.from(new Set(posts.flatMap((p) => p.tags)));
