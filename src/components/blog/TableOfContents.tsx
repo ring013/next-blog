@@ -2,81 +2,74 @@
 
 import { useEffect, useState } from "react";
 
-type TocItem = { id: string; text: string; level: number };
-
-// 日本語にもそこそこ対応した簡易 slugify
-function slugify(s: string) {
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
+type Item = {
+  id: string;
+  text: string;
+  level: 2 | 3;
+};
 
 export default function TableOfContents({ target = "#post-article" }: { target?: string }) {
-  const [items, setItems] = useState<TocItem[]>([]);
-  const [active, setActive] = useState<string>("");
+  const [items, setItems] = useState<Item[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    const root = document.querySelector(target);
-    if (!root) return;
+    const el = document.querySelector(target);
+    if (!el) return;
 
-    const hs = Array.from(root.querySelectorAll<HTMLHeadingElement>("h1, h2, h3"));
-    const list: TocItem[] = [];
+    // 本文内の h2 / h3 を収集
+    const headings = Array.from(el.querySelectorAll<HTMLHeadingElement>("h2, h3"));
+    const toc: Item[] = headings
+      .filter((h) => !!h.id)
+      .map((h) => ({
+        id: h.id,
+        text: h.textContent?.trim() || "",
+        level: (h.tagName.toLowerCase() === "h2" ? 2 : 3) as 2 | 3,
+      }));
 
-    hs.forEach((h) => {
-      if (!h.id) {
-        const gen = slugify(h.textContent || "");
-        if (gen) h.id = gen;
-      }
-      if (!h.id) return;
-      list.push({ id: h.id, text: h.textContent || "", level: Number(h.tagName.substring(1)) });
-    });
+    setItems(toc);
 
-    setItems(list);
-
-    // 現在位置ハイライト（下方向60%を“先読み”）
+    // スクロールに応じて現在位置（active）を更新
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            const id = (e.target as HTMLElement).id;
-            if (id) setActive(id);
-          }
-        });
+        // 画面内に入っている見出しのうち最上部に近いものを active に
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => (a.target as HTMLElement).offsetTop - (b.target as HTMLElement).offsetTop);
+        if (visible[0]) {
+          setActiveId((visible[0].target as HTMLElement).id);
+        }
       },
-      { rootMargin: "0px 0px -60% 0px", threshold: [0, 1] }
+      { rootMargin: "0px 0px -70% 0px", threshold: 0.1 }
     );
 
-    hs.forEach((h) => observer.observe(h));
+    headings.forEach((h) => observer.observe(h));
     return () => observer.disconnect();
   }, [target]);
 
   if (items.length === 0) return null;
 
   return (
-    <nav className="mb-6 rounded border border-zinc-700 p-3 text-sm lg:sticky lg:top-20">
-      <div className="font-semibold mb-2 text-white">目次</div>
-      <ul className="space-y-1">
-        {items.map((it) => (
-          <li key={it.id} className={it.level === 1 ? "" : it.level === 2 ? "ml-2" : "ml-5"}>
-            <a
-              href={`#${it.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(it.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                history.replaceState(null, "", `#${it.id}`);
-              }}
-              className={`hover:underline ${
-                active === it.id ? "text-blue-400" : "text-white/90"
-              }`}
-            >
-              {it.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <aside className="hidden lg:block sticky top-24 self-start">
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
+        <p className="text-sm font-semibold mb-3">目次</p>
+        <nav>
+          <ul className="space-y-2 text-sm">
+            {items.map((it) => (
+              <li key={it.id} className={it.level === 3 ? "pl-4" : ""}>
+                <a
+                  href={`#${it.id}`}
+                  className={[
+                    "block hover:opacity-90",
+                    activeId === it.id ? "text-indigo-400" : "text-zinc-300",
+                  ].join(" ")}
+                >
+                  {it.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </aside>
   );
 }

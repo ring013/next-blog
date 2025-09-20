@@ -1,19 +1,19 @@
-// src/app/blog/[slug]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa, readingTimeJa } from "@/lib/utils";
+import TableOfContents from "@/components/blog/TableOfContents";
 
 export const revalidate = 3600;
 
-// SSG 対象
+// 静的生成するパス
 export async function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
 }
 
-// 個別メタデータ
+// 記事ごとの SEO メタデータ
 export async function generateMetadata(
   { params }: { params: { slug: string } }
 ): Promise<Metadata> {
@@ -31,12 +31,18 @@ export async function generateMetadata(
     title,
     description,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: {
+  openGraph: {
       type: "article",
       url,
       title,
       description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
     },
   };
 }
@@ -45,30 +51,30 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) notFound();
 
-  // HTMLから推定
   const timeLabel = readingTimeJa(post.contentHtml);
 
   return (
-    <article className="max-w-3xl mx-auto p-4">
+    <section className="max-w-[1100px] mx-auto px-4 md:px-6 py-8">
+      {/* タイトルブロック */}
       {post.coverImage && (
-        <div className="relative w-full overflow-hidden rounded mb-6" style={{ height: 320 }}>
+        <div className="relative w-full overflow-hidden rounded-xl mb-6" style={{ height: 320 }}>
           <Image
             src={post.coverImage}
             alt={post.title}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 960px"
+            sizes="(max-width: 768px) 100vw, 1100px"
             priority
           />
         </div>
       )}
 
       <h1 className="text-4xl font-extrabold mb-2">{post.title}</h1>
-      <p className="text-white/80 mb-2">
+      <p className="text-white/80 mb-4">
         {formatJa(post.date)} ・ {post.author} ・ {timeLabel}
       </p>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {post.tags.map((t) => (
           <Link
             key={t}
@@ -80,10 +86,34 @@ export default async function PostPage({ params }: { params: { slug: string } })
         ))}
       </div>
 
-      <div
-        className="prose prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-      />
-    </article>
+      {/* 本文＋目次：lg以上で2カラム */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8">
+        {/* 本文 */}
+        <article
+          id="post-article"
+          className="prose prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+        />
+
+        {/* 目次（右カラムに固定） */}
+        <TableOfContents target="#post-article" />
+      </div>
+
+      {/* 下部ナビ */}
+      <div className="mt-10 flex gap-3">
+        <Link
+          href="/blog"
+          className="rounded border border-white/15 px-4 py-2 hover:bg-white/5"
+        >
+          記事一覧へ
+        </Link>
+        <Link
+          href="/"
+          className="rounded bg-blue-600 px-4 py-2 text-white hover:opacity-90"
+        >
+          このサイトについて
+        </Link>
+      </div>
+    </section>
   );
 }

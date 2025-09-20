@@ -1,4 +1,6 @@
+// src/app/blog/tag/[tag]/page.tsx
 import Link from "next/link";
+import Image from "next/image"; // ← 追加
 import { getPostsByTag } from "@/lib/markdown";
 import { formatJa } from "@/lib/utils";
 
@@ -6,11 +8,7 @@ export const revalidate = 3600;
 
 type Params = { params: { tag: string } };
 
-// 静的生成するパスは既存の generateStaticParams があればOK。
-// 無ければ必要に応じて追加してください。
-
 export default async function TagPage({ params }: Params) {
-  // /blog/tag/%E5%9E%8B%E5%AE%89%E5%85%A8 → "型安全" に復元
   const tag = decodeURIComponent(params.tag);
   const posts = await getPostsByTag(tag);
 
@@ -25,11 +23,15 @@ export default async function TagPage({ params }: Params) {
           {posts.map((p) => (
             <li key={p.slug} className="border border-zinc-800 rounded-lg p-4">
               {p.coverImage && (
-                <img
-                  src={p.coverImage}
-                  alt={p.title}
-                  className="w-full h-40 object-cover rounded mb-3"
-                />
+                <div className="relative w-full h-40 mb-3">
+                  <Image
+                    src={p.coverImage}
+                    alt={p.title}
+                    fill
+                    className="object-cover rounded"
+                    sizes="(max-width: 768px) 100vw, 960px"
+                  />
+                </div>
               )}
 
               <Link
@@ -49,7 +51,6 @@ export default async function TagPage({ params }: Params) {
                 {p.tags.map((t) => (
                   <Link
                     key={t}
-                    // ← 日本語タグはリンク側でエンコードしておく
                     href={`/blog/tag/${encodeURIComponent(t)}`}
                     className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800"
                   >
