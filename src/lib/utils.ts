@@ -1,28 +1,30 @@
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
-/** 2025-09-17 -> 2025年09月17日 の日本語表記 */
-export function formatJa(dateStr: string) {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
+/** yyyy年MM月dd日 表示 */
+export function formatJa(iso: string | Date) {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
   return format(d, "yyyy年MM月dd日", { locale: ja });
 }
 
 /**
- * 読了時間の概算（分）
- * - HTMLをテキスト化して文字数を数える
- * - 日本語前提で「500文字 = 1分」として丸め
- * - 最低1分
+ * 読了時間（日本語向けざっくり推定）
+ * - HTMLからテキストを抽出
+ * - 全角・半角の空白を削って「実文字数」を数える
+ * - 1分=500文字想定で丸め
+ * 例: "約 3 分"
  */
-export function estimateReadingMinutes(html: string, charsPerMin = 500): number {
-  if (!html) return 1;
-  // HTMLタグ除去
+export function readingTimeJa(html: string): string {
+  // HTML → テキスト
   const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const chars = [...text].length; // サロゲートペアも考慮
-  return Math.max(1, Math.round(chars / Math.max(1, charsPerMin)));
+    .replace(/<[^>]+>/g, " ")      // タグ除去
+    .replace(/&nbsp;|&lt;|&gt;|&amp;|&quot;|&#39;/g, " "); // エンティティ簡易除去
+
+  // 空白（半角/全角/改行/タブ）を除いた“見える文字数”
+  const visibleChars = (text || "").replace(/\s|\u3000/g, "").length;
+
+  // だいたい500文字/分 で推定（最低1分）
+  const minutes = Math.max(1, Math.round(visibleChars / 500));
+
+  return `約 ${minutes} 分`;
 }
