@@ -6,6 +6,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Next Blog",
   description: "Next.js + Markdown の学習用ブログ",
+  // ★ RSS を <head> に露出（ブラウザ/リーダーが検出できる）
+  alternates: {
+    types: {
+      "application/rss+xml": "/rss.xml",
+    },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,6 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="hover:opacity-80">Home</Link>
               <Link href="/blog" className="hover:opacity-80">Blog</Link>
               <Link href="/about" className="hover:opacity-80">About</Link>
+              {/* 目に見えるリンクも置きたい場合は↓を有効化
+              <Link href="/rss.xml" className="hover:opacity-80">RSS</Link>
+              */}
             </nav>
           </div>
         </header>
