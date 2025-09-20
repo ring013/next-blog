@@ -2,15 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
-import { formatJa } from "@/lib/utils";
+import { formatJa, estimateReadingMinutes } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
 
 export const revalidate = 3600;
 
+// 事前ビルドするパス
 export async function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
 }
 
+// 記事ごとのメタデータ（OGP 動的生成）
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) return {};
@@ -41,9 +43,11 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) notFound();
 
+  const minutes = estimateReadingMinutes(post.contentHtml);
+
   return (
     <article className="max-w-[1100px] mx-auto p-4">
-      {/* カバー */}
+      {/* カバー画像 */}
       {post.coverImage && (
         <div className="relative w-full overflow-hidden rounded mb-6" style={{ height: 320 }}>
           <Image
@@ -59,7 +63,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
       {/* タイトル & メタ */}
       <h1 className="text-4xl font-extrabold mb-2 text-white">{post.title}</h1>
-      <p className="text-white/90 mb-4">{formatJa(post.date)} ・ {post.author}</p>
+      <p className="text-white/90 mb-4">
+        {formatJa(post.date)} ・ {post.author} ・ 約{minutes}分
+      </p>
+
       <div className="mb-6 flex flex-wrap gap-2">
         {post.tags.map((t) => (
           <Link
@@ -72,7 +79,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         ))}
       </div>
 
-      {/* ---- レイアウト：lg以上は 2 カラム（本文 + 右サイド目次） ---- */}
+      {/* レイアウト：lg以上は 2 カラム（本文 + 右サイド目次） */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-8">
         {/* 本文 */}
         <div
@@ -81,15 +88,14 @@ export default async function PostPage({ params }: { params: { slug: string } })
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
 
-        {/* 目次：モバイルでは本文上に表示、lg以上で右サイドにsticky */}
+        {/* 目次 */}
         <aside className="order-first lg:order-none">
-          {/* モバイルではカード風にして上に表示 */}
+          {/* モバイル */}
           <div className="block lg:hidden rounded border border-zinc-800 p-4 mb-4">
             <h2 className="text-sm font-semibold mb-2 text-white">目次</h2>
             <TableOfContents target="#post-article" />
           </div>
-
-          {/* デスクトップ：右サイドに固定 */}
+          {/* デスクトップ：右側に固定 */}
           <div className="hidden lg:block lg:sticky lg:top-24">
             <div className="rounded border border-zinc-800 p-4">
               <h2 className="text-sm font-semibold mb-2 text-white">目次</h2>
