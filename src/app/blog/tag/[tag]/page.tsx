@@ -17,7 +17,7 @@ export default async function TagPage({ params }: TagPageProps) {
 
   return (
     <section className="max-w-[960px] mx-auto p-4">
-      <h1 className="text-3xl font-extrabold mb-4">#{tag} の記事</h1>
+      <h1 className="text-3xl font-extrabold mb-4">#{decoded} の記事</h1>
 
       {posts.length === 0 ? (
         <p className="text-white/90">該当記事がありません。</p>
