@@ -4,13 +4,15 @@ import { getAllPosts } from "@/lib/markdown";
 import { formatJa } from "@/lib/utils";
 import SearchBox from "./SearchBox";
 type MaybePromise<T> = T | Promise<T>;
-type BlogIndexPageProps = { searchParams?: MaybePromise<{ page?: string }> };
+type BlogIndexPageProps = {
+  searchParams?: Promise<{ page?: string }>;
+};
 
 export const revalidate = 3600;
 
 
 export default async function BlogPage({ searchParams }: BlogIndexPageProps) {
-　const sp = await searchParams;
+  const sp = await searchParams;
   const all = await getAllPosts();
 
   // --- 簡易ページネーション ---

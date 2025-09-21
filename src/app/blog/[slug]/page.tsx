@@ -7,8 +7,8 @@ import { formatJa, readingTimeJa } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
 type MaybePromise<T> = T | Promise<T>;
 type BlogPageProps = {
-  params: MaybePromise<{ slug: string }>;
-  searchParams?: MaybePromise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 
