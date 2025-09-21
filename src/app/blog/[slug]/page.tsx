@@ -46,8 +46,7 @@ export async function generateMetadata(
     },
   };
 }
-
-export default async function PostPage({ params }: { params: { slug: string } }) {
+export default async function PostPage({ params }: PageProps) {
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) notFound();
 
