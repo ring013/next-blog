@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image"; // ← 追加
 import { getPostsByTag } from "@/lib/markdown";
 import { formatJa } from "@/lib/utils";
-import type { PageProps as NextPageProps } from "next";
 type TagPageProps = {
   params: Promise<{ tag: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
