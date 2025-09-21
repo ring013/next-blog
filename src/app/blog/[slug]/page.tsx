@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import type { PageProps as NextPageProps } from "next";
 import Image from "next/image";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa, readingTimeJa } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
-type BlogPageProps = { params: { slug: string } };
+type BlogPageProps = NextPageProps & { params: { slug: string } };
 export const revalidate = 3600;
 
 // 静的生成するパス
