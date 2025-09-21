@@ -3,12 +3,12 @@ import Link from "next/link";
 import Image from "next/image"; // ← 追加
 import { getPostsByTag } from "@/lib/markdown";
 import { formatJa } from "@/lib/utils";
+import type { PageProps as NextPageProps } from "next";
+type TagPageProps = NextPageProps & { params: { tag: string } };
 
 export const revalidate = 3600;
 
-type Params = { params: { tag: string } };
-
-export default async function TagPage({ params }: Params) {
+export default async function TagPage({ params }: TagPageProps) {
   const tag = decodeURIComponent(params.tag);
   const posts = await getPostsByTag(tag);
 
