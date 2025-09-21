@@ -11,8 +11,9 @@ type TagPageProps = {
 export const revalidate = 3600;
 
 export default async function TagPage({ params }: TagPageProps) {
-  const tag = decodeURIComponent(params.tag);
-  const posts = await getPostsByTag(tag);
+  const { tag } = await params;
+  const decoded = decodeURIComponent(tag);
+  const posts = await getPostsByTag(decoded);
 
   return (
     <section className="max-w-[960px] mx-auto p-4">
