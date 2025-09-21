@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import type { PageProps as NextPageProps } from "next";
 import Image from "next/image";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa, readingTimeJa } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
 type BlogPageProps = NextPageProps & { params: { slug: string } };
+type MaybePromise<T> = T | Promise<T>;
+type BlogPageProps = {
+  params: MaybePromise<{ slug: string }>;
+  searchParams?: MaybePromise<Record<string, string | string[] | undefined>>;
+};
+
+
 export const revalidate = 3600;
 
 // 静的生成するパス
@@ -18,7 +24,8 @@ export function generateStaticParams(): { slug: string }[] {
 export async function generateMetadata(
   { params }: BlogPageProps
 ): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug);
+  const { slug } = await params; 
+  const post = await getPostBySlug(slug); 
   if (!post || !post.published) return {};
 
   const siteUrl =
@@ -47,8 +54,9 @@ export async function generateMetadata(
     },
   };
 }
+const { slug } = await params;
 export default async function PostPage({ params }: BlogPageProps) {
-  const post = await getPostBySlug(params.slug);
+  const post = await getPostBySlug(slug);
   if (!post || !post.published) notFound();
 
   const timeLabel = readingTimeJa(post.contentHtml);
