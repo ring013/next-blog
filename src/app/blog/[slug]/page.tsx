@@ -23,6 +23,7 @@ export function generateStaticParams(): { slug: string }[] {
 export async function generateMetadata(
   { params }: BlogPageProps
 ): Promise<Metadata> { 
+  const { slug } = await params;
   const post = await getPostBySlug(slug); 
   if (!post || !post.published) return {};
 
