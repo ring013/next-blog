@@ -52,8 +52,8 @@ export async function generateMetadata(
     },
   };
 }
-const { slug } = await params;
 export default async function PostPage({ params }: BlogPageProps) {
+  const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post || !post.published) notFound();
 
