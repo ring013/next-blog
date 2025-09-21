@@ -5,17 +5,17 @@ import Image from "next/image";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa, readingTimeJa } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
-
+type BlogPageProps = { params: { slug: string } };
 export const revalidate = 3600;
 
 // 静的生成するパス
-export async function generateStaticParams() {
+export function generateStaticParams(): { slug: string }[] {
   return getAllSlugs().map((slug) => ({ slug }));
 }
 
 // 記事ごとの SEO メタデータ
 export async function generateMetadata(
-  { params }: { params: { slug: string } }
+  { params }: BlogPageProps
 ): Promise<Metadata> {
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) return {};
@@ -46,7 +46,7 @@ export async function generateMetadata(
     },
   };
 }
-export default async function PostPage({ params }: PageProps) {
+export default async function PostPage({ params }: BlogPageProps) {
   const post = await getPostBySlug(params.slug);
   if (!post || !post.published) notFound();
 
