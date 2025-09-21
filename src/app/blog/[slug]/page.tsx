@@ -5,7 +5,6 @@ import Image from "next/image";
 import { getAllSlugs, getPostBySlug } from "@/lib/markdown";
 import { formatJa, readingTimeJa } from "@/lib/utils";
 import TableOfContents from "@/components/blog/TableOfContents";
-type BlogPageProps = NextPageProps & { params: { slug: string } };
 type MaybePromise<T> = T | Promise<T>;
 type BlogPageProps = {
   params: MaybePromise<{ slug: string }>;
