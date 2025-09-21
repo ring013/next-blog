@@ -22,8 +22,7 @@ export function generateStaticParams(): { slug: string }[] {
 // 記事ごとの SEO メタデータ
 export async function generateMetadata(
   { params }: BlogPageProps
-): Promise<Metadata> {
-  const { slug } = await params; 
+): Promise<Metadata> { 
   const post = await getPostBySlug(slug); 
   if (!post || !post.published) return {};
 
